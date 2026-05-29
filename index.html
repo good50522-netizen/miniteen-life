@@ -2,73 +2,86 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <!-- 1. 優化：加入行動裝置 PWA 全螢幕必備的 viewport-fit=cover 設定 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
     <title>MINITEEN Life</title>
 
-
-    <!-- ================================================================= -->
-    <!-- iOS (Safari) 行動裝置加入主畫面自訂圖示設定 -->
-    <!-- ================================================================= -->
-    <!-- 指定你在 assets 資料夾中準備好的海灘大合照圖示 -->
-    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-    
-    <!-- 開啟獨立全螢幕模式，讓網頁加入主畫面後點開像原生 App 一樣不顯示網址列 -->
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    
-    <!-- 設定 iPhone 頂部狀態列為半透明，讓網頁背景可以向上完美延伸 -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <!-- 設定加入桌面時預設呈現的 App 名稱 -->
     <meta name="apple-mobile-web-app-title" content="MINITEEN Life">
 
-
-    <!-- ================================================================= -->
-    <!-- Android (Chrome) & PWA 核心設定 -->
-    <!-- ================================================================= -->
-    <link rel="manifest" href="/manifest.json">
-    <!-- 設定 Android 手機瀏覽器上方主題顏色為 SEVENTEEN 寧靜藍 -->
-    <meta name="theme-color" content="#AFF6FC">
-
-
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    
     <style>
         :root {
             --rose: #F7CAC9; --serenity: #AFF6FC; --dark-blue: #2C3E50;
             --sarah: #B19CD9; --zhuzhu: #FFB7C5; --yuxian: #FDFD96;
             --glass: rgba(255, 255, 255, 0.9); --shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
+        * { box-sizing: border-box; }
         body { margin: 0; font-family: -apple-system, 'PingFang TC', sans-serif; background: #fdfdfd; color: var(--dark-blue); }
         
-        /* Header - 加入 paddingTop 以防在全螢幕模式下被 iPhone 的瀏海/動態島遮擋 */
+        /* 頂部標題區 - 自動留出 iPhone 瀏海與動態島高度 */
         .header-widgets { 
             background: linear-gradient(135deg, var(--rose), var(--serenity)); 
-            padding: calc(env(safe-area-inset-top) + 40px) 20px 30px; 
+            padding: calc(env(safe-area-inset-top) + 25px) 20px 20px; 
             border-radius: 0 0 40px 40px; 
             text-align: center; 
             box-shadow: var(--shadow); 
         }
-        .app-content { padding: 20px; padding-bottom: 130px; }
+        .header-widgets h2 { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+        .header-widgets p { font-size: 14px; opacity: 0.8; }
+        
+        .app-content { padding: 15px; padding-bottom: 140px; width: 100%; }
         .page { display: none; animation: fadeIn 0.3s ease; }
         .page.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+        /* ================================================================= */
+        /* 【重要優化】手機端月曆格子放大、變高樣式 */
+        /* ================================================================= */
+        #calendar-container { 
+            background: white; 
+            padding: 15px 10px; 
+            border-radius: 24px; 
+            box-shadow: var(--shadow); 
+        }
+        /* 讓星期一到星期日那一列高度變高 */
+        .fc .fc-col-header-cell {
+            padding: 10px 0 !important;
+            font-size: 14px !important;
+        }
+        /* 將月曆每一週（每一橫列）的高度大幅拉大到 85px 讓格子變大 */
+        .fc .fc-daygrid-day {
+            height: 85px !important; 
+        }
+        /* 放大日子數字的大小，方便手指點選 */
+        .fc .fc-daygrid-day-top {
+            font-size: 15px !important;
+            font-weight: 600;
+            padding: 6px !important;
+        }
+        /* 微調月曆上方工具列排版 */
+        .fc .fc-toolbar {
+            margin-bottom: 15px !important;
+        }
+        .fc .fc-toolbar-title {
+            font-size: 20px !important;
+            font-weight: bold !important;
+        }
+        /* ================================================================= */
 
-        /* 月曆、願望、旅遊共用樣式 */
-        #calendar-container { background: white; padding: 15px; border-radius: 24px; box-shadow: var(--shadow); }
-        .wish-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .wish-card { background: white; border-radius: 28px; padding: 20px; text-align: center; box-shadow: var(--shadow); cursor: pointer; transition: 0.2s; }
+        /* 願望、旅遊分頁樣式 */
+        .wish-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .wish-card { background: white; border-radius: 24px; padding: 20px; text-align: center; box-shadow: var(--shadow); cursor: pointer; transition: 0.2s; }
         .wish-card:active { transform: scale(0.95); }
-        .wish-icon-img { width: 60px; height: 60px; object-fit: contain; margin-bottom: 10px; }
+        .wish-icon-img { width: 55px; height: 55px; object-fit: contain; margin-bottom: 10px; }
         
         .wish-item { background: white; border-radius: 20px; margin-bottom: 15px; overflow: hidden; box-shadow: var(--shadow); border-left: 8px solid; position: relative; }
         .wish-item img { width: 100%; height: 200px; object-fit: cover; background: #eee; display: block; }
         .wish-item-content { padding: 15px; }
-        .wish-tag { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: bold; color: #333; margin-bottom: 8px; display: inline-block; }
 
-
-        /* 記帳專屬樣式 */
+        /* 記帳分頁樣式 */
         .settle-report { background: linear-gradient(135deg, var(--dark-blue), #4a69bd); color: white; border-radius: 24px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow); }
         .fin-row { background: white; padding: 15px; border-radius: 18px; margin-bottom: 12px; box-shadow: var(--shadow); border-left: 8px solid; display: flex; justify-content: space-between; align-items: center; }
         .fin-info b { font-size: 16px; display: block; }
@@ -76,8 +89,7 @@
         .settle-check { width: 26px; height: 26px; border: 2px solid var(--rose); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; }
         .settle-check.checked { background: var(--rose); }
 
-
-        /* 彈窗 */
+        /* 彈窗樣式 */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); z-index: 2000; align-items: center; justify-content: center; }
         .modal-card { background: white; width: 90%; max-width: 380px; padding: 25px; border-radius: 30px; max-height: 85vh; overflow-y: auto; }
         .input-group { text-align: left; margin-bottom: 15px; }
@@ -88,14 +100,13 @@
         .member-dot { width: 48px; height: 48px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; }
         .member-dot.active { border-color: var(--dark-blue); transform: scale(1.1); }
 
-
-        /* 導覽列 - 配合 iOS 全螢幕底部的 Home Indicator 安全區域微調高度與內襯 */
+        /* 底部導覽列 - 留出 iPhone 底部黑條安全區域 */
         .nav-bar { 
             position: fixed; 
             bottom: 0; 
             width: 100%; 
-            height: calc(85px + env(safe-area-inset-bottom)); 
-            padding-bottom: env(safe-area-inset-bottom);
+            height: calc(85px + env(safe-area-inset-bottom, 20px)); 
+            padding-bottom: env(safe-area-inset-bottom, 20px);
             background: var(--glass); 
             backdrop-filter: blur(15px); 
             display: flex; 
@@ -104,22 +115,20 @@
             box-sizing: border-box;
         }
         .nav-btn { border: none; background: none; width: 25%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .nav-img { width: 30px; height: 30px; opacity: 0.3; }
-        .nav-btn.active .nav-img { opacity: 1; transform: translateY(-5px); transition: 0.3s; }
+        .nav-img { width: 28px; height: 28px; opacity: 0.3; }
+        .nav-btn.active .nav-img { opacity: 1; transform: translateY(-3px); transition: 0.3s; }
         .nav-btn span { font-size: 10px; margin-top: 5px; color: var(--dark-blue); }
 
-
-        .fab { position: fixed; bottom: calc(110px + env(safe-area-inset-bottom)); right: 25px; width: 60px; height: 60px; background: var(--rose); border-radius: 50%; color: white; display: none; align-items: center; justify-content: center; font-size: 35px; box-shadow: 0 8px 20px rgba(247,202,201,0.5); z-index: 999; cursor: pointer; }
+        /* 右下角新增按鈕 */
+        .fab { position: fixed; bottom: calc(110px + env(safe-area-inset-bottom, 20px)); right: 25px; width: 60px; height: 60px; background: var(--rose); border-radius: 50%; color: white; display: none; align-items: center; justify-content: center; font-size: 35px; box-shadow: 0 8px 20px rgba(247,202,201,0.5); z-index: 999; cursor: pointer; }
     </style>
 </head>
 <body>
-
 
     <div class="header-widgets">
         <h2 id="page-title">📅 Calendar</h2>
         <p id="page-subtitle">Say the name!</p>
     </div>
-
 
     <main class="app-content">
         <section id="calendar" class="page active"><div id="calendar-container"></div></section>
@@ -137,7 +146,6 @@
             </div>
         </section>
 
-
         <section id="travel" class="page">
             <div id="city-grid" class="wish-grid"></div>
             <div id="city-detail-view" style="display:none;">
@@ -145,7 +153,6 @@
                 <div id="city-items-list"></div>
             </div>
         </section>
-
 
         <section id="finance" class="page">
             <div class="settle-report">
@@ -156,21 +163,16 @@
         </section>
     </main>
 
-
     <div class="fab" id="main-fab" onclick="openAddModal()">+</div>
-
 
     <div id="mainModal" class="modal-overlay">
         <div class="modal-card">
-            <h3 id="modal-title" style="text-align:center;">✨ 新增項目</h3>
-            <input type="hidden" id="edit-id">
-
+            <h3 id="modal-title" style="text-align:center; margin-bottom: 15px;">✨ 新增項目</h3>
 
             <div id="calendar-fields" style="display:none;">
                 <div class="input-group"><label>行程名稱</label><input type="text" id="calTitle" class="input-field"></div>
                 <div class="input-group"><label>日期</label><input type="date" id="calDate" class="input-field"></div>
             </div>
-
 
             <div id="wishlist-fields" style="display:none;">
                 <div class="input-group"><label>項目名稱</label><input type="text" id="wishName" class="input-field"></div>
@@ -178,20 +180,18 @@
                 <div class="input-group"><label>圖片</label><input type="file" id="wishImage" accept="image/*" class="input-field"></div>
             </div>
 
-
             <div id="travel-fields" style="display:none;">
-                <div class="input-group"><label>城市</label><input type="text" id="traCity" class="input-field" placeholder="首爾 / 東京"></div>
+                <div class="input-group"><label>城市</label><input type="text" id="traCity" class="input-field" placeholder="例如：首爾、東京"></div>
                 <div class="input-group"><label>地點名稱</label><input type="text" id="traName" class="input-field"></div>
                 <div class="input-group"><label>Google Map 連結</label><input type="text" id="traLink" class="input-field"></div>
                 <div class="input-group"><label>照片</label><input type="file" id="traImage" accept="image/*" class="input-field"></div>
             </div>
 
-
             <div id="finance-fields" style="display:none;">
                 <div class="input-group"><label>支出項目</label><input type="text" id="finTitle" class="input-field"></div>
                 <div class="input-group"><label>金額</label><input type="number" id="finAmount" class="input-field"></div>
                 <div class="input-group">
-                    <label>應付者</label>
+                    <label>應付者（誰要出錢）</label>
                     <select id="finTarget" class="input-field">
                         <option value="大家平分">大家平分</option>
                         <option value="Sarah,朱朱">Sarah + 朱朱</option>
@@ -204,8 +204,7 @@
                 </div>
             </div>
 
-
-            <label style="font-size:12px; font-weight:bold; opacity:0.6;">選擇成員</label>
+            <label style="font-size:12px; font-weight:bold; opacity:0.6;">主辦 / 墊錢成員</label>
             <div class="member-selector">
                 <div class="member-dot" style="background:var(--sarah);" onclick="setMember('Sarah', this)">Sarah</div>
                 <div class="member-dot" style="background:var(--zhuzhu);" onclick="setMember('朱朱', this)">朱朱</div>
@@ -213,12 +212,10 @@
                 <div class="member-dot active" id="dot-common" style="background:var(--serenity);" onclick="setMember('common', this)">共同</div>
             </div>
 
-
-            <button id="submit-btn" onclick="handleFormSubmit()" style="width:100%; padding:15px; background:var(--rose); border:none; border-radius:15px; color:white; font-weight:bold;">確認儲存</button>
-            <button onclick="closeModal()" style="width:100%; margin-top:10px; background:none; border:none; color:#888;">取消</button>
+            <button id="submit-btn" onclick="handleFormSubmit()" style="width:100%; padding:15px; background:var(--rose); border:none; border-radius:15px; color:white; font-weight:bold; font-size:16px;">確認儲存</button>
+            <button onclick="closeModal()" style="width:100%; margin-top:12px; background:none; border:none; color:#888; font-size:14px;">取消</button>
         </div>
     </div>
-
 
     <nav class="nav-bar">
         <button class="nav-btn active" onclick="showPage('calendar', this)"><img src="assets/nav_calendar.png" class="nav-img"><span>月曆</span></button>
@@ -227,32 +224,30 @@
         <button class="nav-btn" onclick="showPage('finance', this)"><img src="assets/nav_finance.png" class="nav-img"><span>記帳</span></button>
     </nav>
 
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, where, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
-
 
         const firebaseConfig = { apiKey: "AIzaSyDy6tCfyGqFSDYxVQXtyY1EmlPxlT8bBzE", authDomain: "miniteen-life.firebaseapp.com", projectId: "miniteen-life", storageBucket: "miniteen-life.appspot.com", appId: "1:871055659621:web:34b11e88105580ebf0ac8c" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-
         window.db = db;
         window.doc = doc;
         window.deleteDoc = deleteDoc;
         window.updateDoc = updateDoc;
 
-
         let calendar, currentPage = 'calendar', currentCat = '', currentCity = '', selectedMember = 'common';
         const memberColors = { Sarah: '#B19CD9', 朱朱: '#FFB7C5', 于仙: '#FDFD96', common: '#AFF6FC' };
 
-
         document.addEventListener('DOMContentLoaded', () => {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar-container'), {
-                initialView: 'dayGridMonth', locale: 'zh-tw',
+                initialView: 'dayGridMonth', 
+                locale: 'zh-tw',
+                editable: false,
+                contentHeight: 'auto',
                 headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
                 eventClick: (info) => { if(confirm("要刪除這個行程嗎？")) deleteDoc(doc(db, "calendar_v2", info.event.id)); }
             });
@@ -260,7 +255,6 @@
             initListeners();
             updateFabVisibility();
         });
-
 
         function initListeners() {
             onSnapshot(collection(db, "calendar_v2"), snap => {
@@ -270,7 +264,6 @@
             initFinanceListener();
             initTravelGridListener();
         }
-
 
         window.showPage = (id, btn) => {
             currentPage = id;
@@ -282,43 +275,43 @@
             const titles = { calendar: '📅 Calendar', wishlist: '✨ Wish List', travel: '✈️ Travel Pocket', finance: '💰 記帳區' };
             document.getElementById('page-title').innerText = titles[id];
             
-            if(id === 'calendar') setTimeout(() => calendar.render(), 100);
+            if(id === 'calendar') setTimeout(() => { calendar.render(); }, 100);
             updateFabVisibility();
         };
-
 
         window.enterCategory = (cat) => {
             currentCat = cat;
             document.getElementById('wish-main-grid').style.display = 'none';
             document.getElementById('wish-detail-view').style.display = 'block';
             loadWishData();
+            updateFabVisibility();
         };
         window.backToWishGrid = () => {
             currentCat = "";
             document.getElementById('wish-main-grid').style.display = 'grid';
             document.getElementById('wish-detail-view').style.display = 'none';
+            updateFabVisibility();
         };
-
 
         window.enterCity = (city) => {
             currentCity = city;
             document.getElementById('city-grid').style.display = 'none';
             document.getElementById('city-detail-view').style.display = 'block';
             loadCityData();
+            updateFabVisibility();
         };
         window.backToCityGrid = () => {
             currentCity = "";
             document.getElementById('city-grid').style.display = 'grid';
             document.getElementById('city-detail-view').style.display = 'none';
+            updateFabVisibility();
         };
-
 
         function updateFabVisibility() {
             const fab = document.getElementById('main-fab');
-            const showFab = (currentPage === 'calendar' || currentPage === 'finance' || (currentPage === 'wishlist' && currentCat) || currentPage === 'travel');
+            const showFab = (currentPage === 'calendar' || currentPage === 'finance' || (currentPage === 'wishlist' && currentCat) || (currentPage === 'travel' && currentCity));
             fab.style.display = showFab ? 'flex' : 'none';
         }
-
 
         window.openAddModal = () => {
             document.getElementById('calendar-fields').style.display = (currentPage === 'calendar') ? 'block' : 'none';
@@ -333,7 +326,6 @@
             document.querySelectorAll('.member-dot').forEach(d => d.classList.remove('active'));
             el.classList.add('active');
         };
-
 
         window.handleFormSubmit = async () => {
             const btn = document.getElementById('submit-btn');
@@ -357,7 +349,7 @@
                     if(type === 'wish') {
                         await addDoc(collection(db, "wish_v2"), { category: currentCat, name: document.getElementById('wishName').value, link: document.getElementById('wishLink').value, imageUrl: imgUrl, member: selectedMember, color: memberColors[selectedMember] });
                     } else {
-                        await addDoc(collection(db, "travel_v2"), { city: document.getElementById('traCity').value, name: document.getElementById('traName').value, link: document.getElementById('traLink').value, imageUrl: imgUrl, member: selectedMember, color: memberColors[selectedMember] });
+                        await addDoc(collection(db, "travel_v2"), { city: currentCity, name: document.getElementById('traName').value, link: document.getElementById('traLink').value, imageUrl: imgUrl, member: selectedMember, color: memberColors[selectedMember] });
                     }
                 }
                 closeModal();
@@ -365,43 +357,41 @@
             btn.innerText = "確認儲存"; btn.disabled = false;
         };
 
-
         function loadWishData() {
             const q = query(collection(db, "wish_v2"), where("category", "==", currentCat));
-            q.onSnapshot ?? onSnapshot(q, snap => {
+            onSnapshot(q, snap => {
                 document.getElementById('wish-items-list').innerHTML = snap.docs.map(d => {
                     const i = d.data();
-                    return `<div class="wish-item" style="border-left-color:${i.color}">${i.imageUrl?`<img src="${i.imageUrl}">`:''}<div class="wish-item-content"><b>${i.name}</b><br><a href="${i.link}" target="_blank">🔗 連結</a><button onclick="if(confirm('確定要刪除這個願望嗎？')){deleteDoc(doc(db,'wish_v2','${d.id}'))}" style="float:right;background:none;border:none;opacity:0.3;cursor:pointer;">🗑️</button></div></div>`;
+                    return `<div class="wish-item" style="border-left-color:${i.color}">${i.imageUrl?`<img src="${i.imageUrl}">`:''}<div class="wish-item-content"><b>${i.name}</b><br><a href="${i.link}" target="_blank">🔗 開啟連結</a><button onclick="if(confirm('確定要刪除嗎？')){deleteDoc(doc(db,'wish_v2','${d.id}'))}" style="float:right;background:none;border:none;opacity:0.3;cursor:pointer;">🗑️</button></div></div>`;
                 }).join('');
             });
         }
-
 
         function initTravelGridListener() {
             onSnapshot(collection(db, "travel_v2"), snap => {
                 const cities = [...new Set(snap.docs.map(d => d.data().city))];
                 document.getElementById('city-grid').innerHTML = cities.map(c => `<div class="wish-card" onclick="enterCity('${c}')"><div style="font-size:30px;">📍</div><b>${c}</b></div>`).join('');
+                if(cities.length === 0) {
+                    document.getElementById('city-grid').innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#888; padding:40px 0;">目前還沒有城市，點右下角按鈕新增第一個景點吧！</div>`;
+                }
             });
         }
-
 
         function loadCityData() {
             const q = query(collection(db, "travel_v2"), where("city", "==", currentCity));
             onSnapshot(q, snap => {
                 document.getElementById('city-items-list').innerHTML = snap.docs.map(d => {
                     const i = d.data();
-                    return `<div class="wish-item" style="border-left-color:${i.color}">${i.imageUrl?`<img src="${i.imageUrl}">`:''}<div class="wish-item-content"><b>${i.name}</b><br><a href="${i.link}" target="_blank">📍 Google Map</a><button onclick="if(confirm('確定要刪除這個景點嗎？')){deleteDoc(doc(db,'travel_v2','${d.id}'))}" style="float:right;background:none;border:none;opacity:0.3;cursor:pointer;">🗑️</button></div></div>`;
+                    return `<div class="wish-item" style="border-left-color:${i.color}">${i.imageUrl?`<img src="${i.imageUrl}">`:''}<div class="wish-item-content"><b>${i.name}</b><br><a href="${i.link}" target="_blank">📍 地圖導航</a><button onclick="if(confirm('確定要刪除嗎？')){deleteDoc(doc(db,'travel_v2','${d.id}'))}" style="float:right;background:none;border:none;opacity:0.3;cursor:pointer;">🗑️</button></div></div>`;
                 }).join('');
             });
         }
-
 
         function initFinanceListener() {
             onSnapshot(collection(db, "finance_v2"), snap => {
                 const list = document.getElementById('finance-items-list');
                 const members = ['Sarah', '朱朱', '于仙'];
                 let debts = { 'Sarah': { '朱朱': 0, '于仙': 0 }, '朱朱': { 'Sarah': 0, '于仙': 0 }, '于仙': { 'Sarah': 0, '朱朱': 0 } };
-
 
                 list.innerHTML = snap.docs.map(d => {
                     const data = d.data();
@@ -416,20 +406,19 @@
                         } else if (target !== payer) debts[target][payer] += amt;
                     }
                     return `<div class="fin-row" style="border-left-color:${data.color}; opacity:${data.isPaid?0.4:1}">
-                        <div class="fin-info"><b>${data.title}</b><small>${data.paidBy} 墊 ➔ ${data.targetPayer}</small></div>
+                        <div class="fin-info"><b>${data.title}</b><small>${data.paidBy} 墊付 ➔ 對象：${data.targetPayer}</small></div>
                         <div style="display:flex; align-items:center; gap:10px;"><b>$${data.amount}</b>
                         <div class="settle-check ${data.isPaid?'checked':''}" onclick="updateDoc(doc(db,'finance_v2','${d.id}'),{isPaid:!${data.isPaid}})">${data.isPaid?'✓':''}</div>
-                        <button onclick="if(confirm('確定要刪除這一筆帳務嗎？')){deleteDoc(doc(db,'finance_v2','${d.id}'))}" style="background:none;border:none;opacity:0.3;cursor:pointer;">🗑️</button></div></div>`;
+                        <button onclick="if(confirm('確定要刪除嗎？')){deleteDoc(doc(db,'finance_v2','${d.id}'))}" style="background:none;border:none;opacity:0.3;cursor:pointer;">🗑️</button></div></div>`;
                 }).join('');
-
 
                 let report = [];
                 for (let i=0; i<3; i++) for(let j=i+1; j<3; j++) {
                     let m1 = members[i], m2 = members[j], diff = debts[m1][m2] - debts[m2][m1];
-                    if(diff > 0) report.push(`${m1} ➔ ${m2} $${diff}`);
-                    else if(diff < 0) report.push(`${m2} ➔ ${m1} $${Math.abs(diff)}`);
+                    if(diff > 0) report.push(`💸 ${m1} 應給 ${m2} $${diff}`);
+                    else if(diff < 0) report.push(`💸 ${m2} 應給 ${m1} $${Math.abs(diff)}`);
                 }
-                document.getElementById('settlement-list').innerHTML = report.length ? report.map(r => `<div>${r}</div>`).join('') : "🎉 帳務已結清！";
+                document.getElementById('settlement-list').innerHTML = report.length ? report.map(r => `<div>${r}</div>`).join('') : "🎉 所有帳務均已結清！";
             });
         }
     </script>
