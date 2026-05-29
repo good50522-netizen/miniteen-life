@@ -427,9 +427,21 @@
             updateFabVisibility();
         };
 
+        // 【修正核心】讓 + 號按鈕在各頁面的主頁與內頁都能正確判斷顯示
         function updateFabVisibility() {
             const fab = document.getElementById('main-fab');
-            const showFab = (currentPage === 'calendar' || currentPage === 'finance' || (currentPage === 'wishlist' && currentCat) || (currentPage === 'travel' && currentCity));
+            let showFab = false;
+            
+            if (currentPage === 'calendar' || currentPage === 'finance') {
+                showFab = true;
+            } else if (currentPage === 'wishlist') {
+                // 如果在願望分頁：無論在主網格還是在分類裡，都允許點擊新增
+                showFab = true; 
+            } else if (currentPage === 'travel') {
+                // 如果在旅遊分頁：無論在城市網格還是在城市詳細裡，都允許點擊新增
+                showFab = true;
+            }
+            
             fab.style.display = showFab ? 'flex' : 'none';
         }
 
@@ -442,6 +454,11 @@
             // 自動帶入剛才點選的日期到新增欄位中
             if(currentPage === 'calendar' && currentlySelectedDate) {
                 document.getElementById('calDate').value = currentlySelectedDate;
+            }
+            
+            // 如果在旅遊頁面且已經在某個城市內，自動幫忙填寫城市名稱
+            if(currentPage === 'travel' && currentCity) {
+                document.getElementById('traCity').value = currentCity;
             }
             
             document.getElementById('mainModal').style.display = 'flex';
@@ -475,14 +492,27 @@
                         imgUrl = await getDownloadURL(res.ref);
                     }
                     if(type === 'wish') {
-                        await addDoc(collection(db, "wish_v2"), { category: currentCat, name: document.getElementById('wishName').value, link: document.getElementById('wishLink').value, imageUrl: imgUrl, member: selectedMember, color: memberColors[selectedMember] });
+                        // 優先使用填寫的分類，若在分類內預設帶入
+                        let targetCat = currentCat || "Idol 週邊"; 
+                        await addDoc(collection(db, "wish_v2"), { category: targetCat, name: document.getElementById('wishName').value, link: document.getElementById('wishLink').value, imageUrl: imgUrl, member: selectedMember, color: memberColors[selectedMember] });
                     } else {
-                        await addDoc(collection(db, "travel_v2"), { city: currentCity, name: document.getElementById('traName').value, link: document.getElementById('traLink').value, imageUrl: imgUrl, member: selectedMember, color: memberColors[selectedMember] });
+                        let targetCity = document.getElementById('traCity').value || currentCity || "未命名城市";
+                        await addDoc(collection(db, "travel_v2"), { city: targetCity, name: document.getElementById('traName').value, link: document.getElementById('traLink').value, imageUrl: imgUrl, member: selectedMember, color: memberColors[selectedMember] });
+                        // 如果是在外面格子新增的，自動幫她跳轉進去
+                        if(!currentCity) currentCity = targetCity;
                     }
                 }
                 closeModal();
-                // 清空欄位
+                // 清空輸入欄位
                 if(document.getElementById('calTitle')) document.getElementById('calTitle').value = '';
+                if(document.getElementById('wishName')) document.getElementById('wishName').value = '';
+                if(document.getElementById('traName')) document.getElementById('traName').value = '';
+                if(document.getElementById('finTitle')) document.getElementById('finTitle').value = '';
+                
+                // 重新刷新按鈕與狀態
+                if(currentPage === 'wishlist' && currentCat) loadWishData();
+                if(currentPage === 'travel' && currentCity) enterCity(currentCity);
+                updateFabVisibility();
             } catch (e) { alert("儲存失敗"); }
             btn.innerText = "確認儲存"; btn.disabled = false;
         };
