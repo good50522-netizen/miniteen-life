@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -38,7 +38,7 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         /* ================================================================= */
-        /* 【重要優化】手機端月曆格子放大、變高樣式 */
+        /* 手機端月曆格子優化與文字釋放樣式 */
         /* ================================================================= */
         #calendar-container { 
             background: white; 
@@ -46,28 +46,84 @@
             border-radius: 24px; 
             box-shadow: var(--shadow); 
         }
-        /* 讓星期一到星期日那一列高度變高 */
         .fc .fc-col-header-cell {
             padding: 10px 0 !important;
             font-size: 14px !important;
         }
-        /* 將月曆每一週（每一橫列）的高度大幅拉大到 85px 讓格子變大 */
+        /* 格子高度保持寬鬆 */
         .fc .fc-daygrid-day {
-            height: 85px !important; 
+            height: 90px !important; 
         }
-        /* 放大日子數字的大小，方便手指點選 */
+        /* 數字靠左上角，縮小字級並加粗，留出右邊空間給行程 */
         .fc .fc-daygrid-day-top {
-            font-size: 15px !important;
-            font-weight: 600;
-            padding: 6px !important;
+            font-size: 13px !important;
+            font-weight: bold !important;
+            padding: 4px 6px !important;
+            flex-direction: row !important;
+        }
+        /* 隱藏 FullCalendar 預設的「日」字後綴 */
+        .fc .fc-daygrid-day-number {
+            padding: 0 !important;
         }
         /* 微調月曆上方工具列排版 */
-        .fc .fc-toolbar {
-            margin-bottom: 15px !important;
+        .fc .fc-toolbar { margin-bottom: 15px !important; }
+        .fc .fc-toolbar-title { font-size: 20px !important; font-weight: bold !important; }
+
+        /* 縮小月曆格子內的事件字體，讓字能裝得更多 */
+        .fc-daygrid-event {
+            font-size: 11px !important;
+            padding: 2px 4px !important;
+            margin: 2px 1px 0 1px !important;
+            border-radius: 4px !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .fc .fc-toolbar-title {
-            font-size: 20px !important;
-            font-weight: bold !important;
+
+        /* 當日行程詳細清單面板 */
+        .day-agenda-panel {
+            background: white;
+            border-radius: 24px;
+            padding: 18px;
+            margin-top: 15px;
+            box-shadow: var(--shadow);
+        }
+        .day-agenda-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: var(--dark-blue);
+            border-left: 5px solid var(--rose);
+            padding-left: 8px;
+        }
+        .agenda-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            background: #f9f9f9;
+            border-left: 6px solid #ccc;
+        }
+        .agenda-item-text {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .agenda-delete-btn {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px;
+            opacity: 0.6;
+        }
+        .agenda-delete-btn:active { opacity: 1; }
+        .no-agenda-text {
+            font-size: 13px;
+            color: #999;
+            text-align: center;
+            padding: 10px 0;
         }
         /* ================================================================= */
 
@@ -131,7 +187,16 @@
     </div>
 
     <main class="app-content">
-        <section id="calendar" class="page active"><div id="calendar-container"></div></section>
+        <section id="calendar" class="page active">
+            <div id="calendar-container"></div>
+            
+            <div class="day-agenda-panel">
+                <div class="day-agenda-title" id="selected-date-title">請選擇日期檢視行程</div>
+                <div id="agenda-items-container">
+                    <div class="no-agenda-text">點擊上方月曆格子，可於此處看完整字並刪除行程。</div>
+                </div>
+            </div>
+        </section>
         
         <section id="wishlist" class="page">
             <div id="wish-main-grid" class="wish-grid">
@@ -240,6 +305,8 @@
         window.updateDoc = updateDoc;
 
         let calendar, currentPage = 'calendar', currentCat = '', currentCity = '', selectedMember = 'common';
+        let allCalendarEvents = []; // 儲存所有行程的快取陣列
+        let currentlySelectedDate = ''; // 當前點選的日期
         const memberColors = { Sarah: '#B19CD9', 朱朱: '#FFB7C5', 于仙: '#FDFD96', common: '#AFF6FC' };
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -249,7 +316,21 @@
                 editable: false,
                 contentHeight: 'auto',
                 headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
-                eventClick: (info) => { if(confirm("要刪除這個行程嗎？")) deleteDoc(doc(db, "calendar_v2", info.event.id)); }
+                // 移除「日」字的關鍵設定
+                dayCellFormatter: function(arg) {
+                    return arg.date.getDate(); 
+                },
+                // 點擊日期格子觸發下方行程顯示
+                dateClick: function(info) {
+                    showDayAgenda(info.dateStr);
+                },
+                // 點擊事件本身也觸發下方行程顯示
+                eventClick: function(info) {
+                    info.jsEvent.preventDefault(); // 防止預設行為
+                    const eventObj = info.event;
+                    const dateStr = eventObj.startStr.split('T')[0];
+                    showDayAgenda(dateStr);
+                }
             });
             calendar.render();
             initListeners();
@@ -259,11 +340,50 @@
         function initListeners() {
             onSnapshot(collection(db, "calendar_v2"), snap => {
                 calendar.removeAllEvents();
-                calendar.addEventSource(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+                allCalendarEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                calendar.addEventSource(allCalendarEvents);
+                
+                // 如果當前有選定的日期，資料更新時同步刷新下方面板
+                if(currentlySelectedDate) {
+                    showDayAgenda(currentlySelectedDate);
+                }
             });
             initFinanceListener();
             initTravelGridListener();
         }
+
+        // 依據點選的日期更新下方的詳細行程清單
+        window.showDayAgenda = (dateStr) => {
+            currentlySelectedDate = dateStr;
+            const formattedTitle = dateStr.replace('-', '年').replace('-', '月') + '日 行程';
+            document.getElementById('selected-date-title').innerText = `📅 ${formattedTitle}`;
+            
+            // 篩選出當天的所有行程
+            const dayEvents = allCalendarEvents.filter(ev => ev.start === dateStr);
+            const container = document.getElementById('agenda-items-container');
+            
+            if(dayEvents.length === 0) {
+                container.innerHTML = `<div class="no-agenda-text">今天沒有排行程喔～☕</div>`;
+            } else {
+                container.innerHTML = dayEvents.map(ev => {
+                    return `<div class="agenda-item" style="border-left-color: ${ev.color || 'var(--rose)'}">
+                        <div class="agenda-item-text">${ev.title}</div>
+                        <button class="agenda-delete-btn" onclick="deleteCalendarItem('${ev.id}')">🗑️</button>
+                    </div>`;
+                }).join('');
+            }
+        };
+
+        // 刪除行程專用函式
+        window.deleteCalendarItem = async (id) => {
+            if(confirm("確定要刪除這個行程嗎？")) {
+                try {
+                    await deleteDoc(doc(db, "calendar_v2", id));
+                } catch(e) {
+                    alert("刪除失敗");
+                }
+            }
+        };
 
         window.showPage = (id, btn) => {
             currentPage = id;
@@ -318,6 +438,12 @@
             document.getElementById('wishlist-fields').style.display = (currentPage === 'wishlist') ? 'block' : 'none';
             document.getElementById('travel-fields').style.display = (currentPage === 'travel') ? 'block' : 'none';
             document.getElementById('finance-fields').style.display = (currentPage === 'finance') ? 'block' : 'none';
+            
+            // 自動帶入剛才點選的日期到新增欄位中
+            if(currentPage === 'calendar' && currentlySelectedDate) {
+                document.getElementById('calDate').value = currentlySelectedDate;
+            }
+            
             document.getElementById('mainModal').style.display = 'flex';
         };
         window.closeModal = () => document.getElementById('mainModal').style.display = 'none';
@@ -332,7 +458,9 @@
             btn.innerText = "處理中..."; btn.disabled = true;
             try {
                 if (currentPage === 'calendar') {
-                    await addDoc(collection(db, "calendar_v2"), { title: document.getElementById('calTitle').value, start: document.getElementById('calDate').value, color: memberColors[selectedMember] });
+                    const inputDate = document.getElementById('calDate').value;
+                    await addDoc(collection(db, "calendar_v2"), { title: document.getElementById('calTitle').value, start: inputDate, color: memberColors[selectedMember] });
+                    currentlySelectedDate = inputDate; // 新增後將該日設為選定日
                 } 
                 else if (currentPage === 'finance') {
                     await addDoc(collection(db, "finance_v2"), { title: document.getElementById('finTitle').value, amount: Number(document.getElementById('finAmount').value), targetPayer: document.getElementById('finTarget').value, paidBy: selectedMember, color: memberColors[selectedMember], isPaid: false });
@@ -353,6 +481,8 @@
                     }
                 }
                 closeModal();
+                // 清空欄位
+                if(document.getElementById('calTitle')) document.getElementById('calTitle').value = '';
             } catch (e) { alert("儲存失敗"); }
             btn.innerText = "確認儲存"; btn.disabled = false;
         };
@@ -402,7 +532,7 @@
                             members.forEach(m => { if(m !== payer) debts[m][payer] += split; });
                         } else if (target.includes(",")) {
                             const pair = target.split(","), split = Math.round(amt / 2);
-                            pair.forEach(m => { if(m !== payer) debts[m][payer] += split; });
+                            pair.forEach(m => { if(m !== payer) debts[m][pair.find(x => x !== m)] += split; });
                         } else if (target !== payer) debts[target][payer] += amt;
                     }
                     return `<div class="fin-row" style="border-left-color:${data.color}; opacity:${data.isPaid?0.4:1}">
