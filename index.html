@@ -60,6 +60,7 @@
             font-weight: bold !important;
             padding: 4px 6px !important;
             flex-direction: row !important;
+            color: var(--dark-blue) !important;
         }
         /* 隱藏 FullCalendar 預設的「日」字後綴 */
         .fc .fc-daygrid-day-number {
@@ -69,7 +70,7 @@
         .fc .fc-toolbar { margin-bottom: 15px !important; }
         .fc .fc-toolbar-title { font-size: 20px !important; font-weight: bold !important; }
 
-        /* 縮小月曆格子內的事件字體，讓字能裝得更多 */
+        /* 縮小月曆格子內的事件字體，並修改字體顏色為黑色 */
         .fc-daygrid-event {
             font-size: 11px !important;
             padding: 2px 4px !important;
@@ -78,6 +79,13 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: #000000 !important; /* 核心修改：白字改黑字 */
+            font-weight: 500 !important;
+        }
+        
+        /* 確保 FullCalendar 內部事件連接字體也為黑字 */
+        .fc-daygrid-event * {
+            color: #000000 !important;
         }
 
         /* 當日行程詳細清單面板 */
@@ -248,7 +256,7 @@
             <div id="travel-fields" style="display:none;">
                 <div class="input-group"><label>城市</label><input type="text" id="traCity" class="input-field" placeholder="例如：首爾、東京"></div>
                 <div class="input-group"><label>地點名稱</label><input type="text" id="traName" class="input-field"></div>
-                <div class="input-group"><label>Google Map 連結</label><input type="text" id="traLink" class="input-field"></div>
+                <div class="input-group"><label>Map 連結 (支援 Naver/Google)</label><input type="text" id="traLink" class="input-field"></div>
                 <div class="input-group"><label>照片</label><input type="file" id="traImage" accept="image/*" class="input-field"></div>
             </div>
 
@@ -284,9 +292,9 @@
 
     <nav class="nav-bar">
         <button class="nav-btn active" onclick="showPage('calendar', this)"><img src="assets/nav_calendar.png" class="nav-img"><span>月曆</span></button>
-        <button class="nav-btn" onclick="showPage('wishlist', this)"><img src="assets/nav_wish.png" class="nav-img"><span>願望</span></button>
-        <button class="nav-btn" onclick="showPage('travel', this)"><img src="assets/nav_travel.png" class="nav-img"><span>旅遊</span></button>
-        <button class="nav-btn" onclick="showPage('finance', this)"><img src="assets/nav_finance.png" class="nav-img"><span>記帳</span></button>
+            <button class="nav-btn" onclick="showPage('wishlist', this)"><img src="assets/nav_wish.png" class="nav-img"><span>願望</span></button>
+            <button class="nav-btn" onclick="showPage('travel', this)"><img src="assets/nav_travel.png" class="nav-img"><span>旅遊</span></button>
+            <button class="nav-btn" onclick="showPage('finance', this)"><img src="assets/nav_finance.png" class="nav-img"><span>記帳</span></button>
     </nav>
 
     <script type="module">
@@ -308,6 +316,54 @@
         let allCalendarEvents = []; // 儲存所有行程的快取陣列
         let currentlySelectedDate = ''; // 當前點選的日期
         const memberColors = { Sarah: '#B19CD9', 朱朱: '#FFB7C5', 于仙: '#FDFD96', common: '#AFF6FC' };
+
+        // 新增：Naver Map 專用 App 跳轉優化處理函式
+        window.openMapLink = (e, url) => {
+            e.preventDefault();
+            if (!url) return;
+            
+            // 判斷是否為 Naver 地圖連結
+            if (url.includes('naver.com') || url.includes('naver.me')) {
+                // 1. 嘗試提取 Naver 的地點 ID（通常出現於place/後面，或query參數中）
+                let placeId = "";
+                const placeMatch = url.match(/place\/(\d+)/);
+                if (placeMatch && placeMatch[1]) {
+                    placeId = placeMatch[1];
+                }
+                
+                // 2. 如果成功提取到 Place ID，建構官方深度連結協議
+                if (placeId) {
+                    const iosScheme = `nmap://place?id=${placeId}&appname=miniteen.life`;
+                    
+                    // 行動端嘗試開啟 App
+                    const startTime = Date.now();
+                    window.location.href = iosScheme;
+                    
+                    // 檢查是否成功喚起，若 2 秒內沒跳轉成功（代表沒裝 App），則以新視窗開啟原網頁版
+                    setTimeout(() => {
+                        if (Date.now() - startTime < 2200) {
+                            window.open(url, '_blank');
+                        }
+                    }, 2000);
+                    return;
+                }
+                
+                // 3. 如果無法精準提取 ID（例如是定位或路線網址），採用通用 Scheme 喚起
+                const generalScheme = `nmap://action=default`;
+                const startTime = Date.now();
+                
+                // 嘗試直接透過不帶參數的 scheme 喚起 App，若失敗則開啟原網址
+                window.location.href = `nmap://url?url=${encodeURIComponent(url)}`;
+                setTimeout(() => {
+                    if (Date.now() - startTime < 2200) {
+                        window.open(url, '_blank');
+                    }
+                }, 2000);
+            } else {
+                // 如果是 Google Map 或其他連結，直接正常開新分頁
+                window.open(url, '_blank');
+            }
+        };
 
         document.addEventListener('DOMContentLoaded', () => {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar-container'), {
@@ -427,7 +483,7 @@
             updateFabVisibility();
         };
 
-        // 【修正核心】讓 + 號按鈕在各頁面的主頁與內頁都能正確判斷顯示
+        // 讓 + 號按鈕在各頁面的主頁與內頁都能正確判斷顯示
         function updateFabVisibility() {
             const fab = document.getElementById('main-fab');
             let showFab = false;
@@ -435,10 +491,8 @@
             if (currentPage === 'calendar' || currentPage === 'finance') {
                 showFab = true;
             } else if (currentPage === 'wishlist') {
-                // 如果在願望分頁：無論在主網格還是在分類裡，都允許點擊新增
                 showFab = true; 
             } else if (currentPage === 'travel') {
-                // 如果在旅遊分頁：無論在城市網格還是在城市詳細裡，都允許點擊新增
                 showFab = true;
             }
             
@@ -492,13 +546,11 @@
                         imgUrl = await getDownloadURL(res.ref);
                     }
                     if(type === 'wish') {
-                        // 優先使用填寫的分類，若在分類內預設帶入
                         let targetCat = currentCat || "Idol 週邊"; 
                         await addDoc(collection(db, "wish_v2"), { category: targetCat, name: document.getElementById('wishName').value, link: document.getElementById('wishLink').value, imageUrl: imgUrl, member: selectedMember, color: memberColors[selectedMember] });
                     } else {
                         let targetCity = document.getElementById('traCity').value || currentCity || "未命名城市";
                         await addDoc(collection(db, "travel_v2"), { city: targetCity, name: document.getElementById('traName').value, link: document.getElementById('traLink').value, imageUrl: imgUrl, member: selectedMember, color: memberColors[selectedMember] });
-                        // 如果是在外面格子新增的，自動幫她跳轉進去
                         if(!currentCity) currentCity = targetCity;
                     }
                 }
@@ -542,7 +594,8 @@
             onSnapshot(q, snap => {
                 document.getElementById('city-items-list').innerHTML = snap.docs.map(d => {
                     const i = d.data();
-                    return `<div class="wish-item" style="border-left-color:${i.color}">${i.imageUrl?`<img src="${i.imageUrl}">`:''}<div class="wish-item-content"><b>${i.name}</b><br><a href="${i.link}" target="_blank">📍 地圖導航</a><button onclick="if(confirm('確定要刪除嗎？')){deleteDoc(doc(db,'travel_v2','${d.id}'))}" style="float:right;background:none;border:none;opacity:0.3;cursor:pointer;">🗑️</button></div></div>`;
+                    // 核心優化：將原本的 <a href="..."> 修改為由自訂 window.openMapLink 方法接管處理，確保 App 開啟支援
+                    return `<div class="wish-item" style="border-left-color:${i.color}">${i.imageUrl?`<img src="${i.imageUrl}">`:''}<div class="wish-item-content"><b>${i.name}</b><br><a href="${i.link}" onclick="window.openMapLink(event, '${i.link}')">📍 地圖導航 (App/網頁)</a><button onclick="if(confirm('確定要刪除嗎？')){deleteDoc(doc(db,'travel_v2','${d.id}'))}" style="float:right;background:none;border:none;opacity:0.3;cursor:pointer;">🗑️</button></div></div>`;
                 }).join('');
             });
         }
